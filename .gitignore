@@ -1,0 +1,12 @@
+# Ignore Excel files
+*.xlsx
+
+# Ignore session files
+session.json
+session.dat
+
+# Ignore environment config
+.env
+
+# Ignore database files
+*.db
