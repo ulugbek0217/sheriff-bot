@@ -5,18 +5,32 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"sync"
 
 	tg "github.com/amarnathcjd/gogram/telegram"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	db "github.com/ulugbek0217/sheriff-bot/db/sqlc"
 	"github.com/ulugbek0217/sheriff-bot/handlers"
 	"github.com/ulugbek0217/sheriff-bot/utils"
 )
 
 func main() {
+	err := utils.LoadEnv("config/.env")
+	if err != nil {
+		log.Fatalf("error loading env: %v", err)
+	}
+
+	app_id, err := strconv.ParseInt(os.Getenv("APP_ID"), 10, 64)
+	if err != nil {
+		log.Fatalf("error reading env: %v", err)
+	}
+	app_hash := os.Getenv("APP_HASH")
+	phone := os.Getenv("PHONE")
+
 	client, err := tg.NewClient(tg.ClientConfig{
-		AppID:   19973721,
-		AppHash: "a0a5674cceaa4283aa00ee243f6089b8",
+		AppID:   int32(app_id),
+		AppHash: app_hash,
 		DeviceConfig: tg.DeviceConfig{
 			DeviceModel:   "Sheriff",
 			SystemVersion: "Linux",
@@ -37,7 +51,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	client.Login("+998338943615", &tg.LoginOptions{
+	client.Login(phone, &tg.LoginOptions{
 		// Handle OTP code callback
 		CodeCallback: func() (string, error) {
 			fmt.Print("Enter Telegram code: ")
@@ -60,21 +74,24 @@ func main() {
 	}
 	defer client.Disconnect()
 
-	err = utils.LoadEnv("config/.env")
+	dbPool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
-		log.Fatalf("error loading env: %v", err)
-	}
-
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
-	defer conn.Close(context.Background())
+	defer dbPool.Close()
+	// conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// defer conn.Close(context.Background())
 
+	var wg = sync.WaitGroup{}
 	app := &handlers.App{
-		Store:  db.NewStore(conn),
+		Store:  db.NewStore(dbPool),
+		Pool:   dbPool,
 		Admins: utils.GetAdmins(),
+		WG:     &wg,
 	}
 
 	client.SendMessage(utils.GetAdmins()[0], "Bot has been started")

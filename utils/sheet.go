@@ -31,12 +31,16 @@ func ExportToExcel(accounts []db.Account) error {
 		f.SetCellValue("Sheet1", "H"+strconv.Itoa(i+2), accounts[i].PersonalChannelID)
 		f.SetCellValue("Sheet1", "I"+strconv.Itoa(i+2), accounts[i].CreatedAt)
 	}
-	err := os.Mkdir("files", 0755)
-	if err != nil {
-		fmt.Printf("error creating files folder: %v", err)
+	var dir string = "files"
+	if !FolderExists(dir) {
+		err := os.Mkdir(dir, 0755)
+		if err != nil {
+			return fmt.Errorf("error creating files folder: %v", err)
+		}
 	}
-	if err := f.SaveAs("files/accounts.xlsx"); err != nil {
-		return err
+
+	if err := f.SaveAs(dir + "/accounts.xlsx"); err != nil {
+		return fmt.Errorf("eror saving to .xlsx: %v", err)
 	}
 	return nil
 }

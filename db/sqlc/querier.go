@@ -9,10 +9,10 @@ import (
 )
 
 type Querier interface {
-	AccountsQuantity(ctx context.Context) (int64, error)
-	CreateAccount(ctx context.Context, arg CreateAccountParams) error
-	GetAccount(ctx context.Context, userID int64) (Account, error)
-	ListAccounts(ctx context.Context, arg ListAccountsParams) ([]Account, error)
+	AccountsQuantity(ctx context.Context, db DBTX) (int64, error)
+	CreateAccount(ctx context.Context, db DBTX, arg CreateAccountParams) error
+	GetAccount(ctx context.Context, db DBTX, userID int64) (Account, error)
+	ListAccounts(ctx context.Context, db DBTX, arg ListAccountsParams) ([]Account, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -13,8 +13,8 @@ const accountsQuantity = `-- name: AccountsQuantity :one
 SELECT COUNT(*) FROM accounts
 `
 
-func (q *Queries) AccountsQuantity(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, accountsQuantity)
+func (q *Queries) AccountsQuantity(ctx context.Context, db DBTX) (int64, error) {
+	row := db.QueryRow(ctx, accountsQuantity)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -39,8 +39,8 @@ type CreateAccountParams struct {
 	PersonalChannelID string `json:"personal_channel_id"`
 }
 
-func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) error {
-	_, err := q.db.Exec(ctx, createAccount,
+func (q *Queries) CreateAccount(ctx context.Context, db DBTX, arg CreateAccountParams) error {
+	_, err := db.Exec(ctx, createAccount,
 		arg.UserID,
 		arg.FirstName,
 		arg.LastName,
@@ -59,8 +59,8 @@ WHERE user_id = $1
 LIMIT 1
 `
 
-func (q *Queries) GetAccount(ctx context.Context, userID int64) (Account, error) {
-	row := q.db.QueryRow(ctx, getAccount, userID)
+func (q *Queries) GetAccount(ctx context.Context, db DBTX, userID int64) (Account, error) {
+	row := db.QueryRow(ctx, getAccount, userID)
 	var i Account
 	err := row.Scan(
 		&i.UserID,
@@ -88,8 +88,8 @@ type ListAccountsParams struct {
 	Offset int32 `json:"offset"`
 }
 
-func (q *Queries) ListAccounts(ctx context.Context, arg ListAccountsParams) ([]Account, error) {
-	rows, err := q.db.Query(ctx, listAccounts, arg.Limit, arg.Offset)
+func (q *Queries) ListAccounts(ctx context.Context, db DBTX, arg ListAccountsParams) ([]Account, error) {
+	rows, err := db.Query(ctx, listAccounts, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
